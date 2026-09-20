@@ -1,11 +1,11 @@
 ---
 id: TASK-1
 title: Build and pressure-test the pi-backlog skill
-status: To Do
+status: In Progress
 assignee:
   - '@pi-backlog-builder'
 created_date: '2026-09-20 11:58'
-updated_date: '2026-09-20 17:16'
+updated_date: '2026-09-20 18:02'
 labels:
   - pi-skill
   - headless
@@ -39,6 +39,20 @@ Build a reusable Pi skill that gives agents a project-level ticket workflow thro
 - [ ] #9 Checkpoint commits reach only the selected feature branch on GitHub; no command or refspec targets main.
 <!-- AC:END -->
 
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Probe Backlog.md 1.52.0, define executable acceptance checks, build the root skill and focused references, validate isolated real-CLI workflows and Pi discovery, then checkpoint only feature/pi-backlog-skill.
+<!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implementation started from remote feature checkpoint f3ff9116cc8d. The current commit matches origin/feature/pi-backlog-skill; no local bookmark persists while it equals the remote name.
+
+Tested skeleton now includes valid pi-backlog metadata, an explicit activation gate, project-local preflight, missing CLI and missing project errors, and a model-free Pi SDK discovery probe. Verification: ./tests/test-skeleton.sh.
+<!-- SECTION:NOTES:END -->
+
 ## Comments
 
 <!-- COMMENTS:BEGIN -->
@@ -46,5 +60,17 @@ author: coordinator
 created: 2026-09-20 17:16
 ---
 Owner requires regular remote checkpoints because local Git work has no cloud backup. The worker may create commits but must send every push through a tmux command that runs as the owner. Push only to the selected feature branch and never to main. Launch watchdog cadence: 2 minutes for startup and 5 minutes for execution.
+---
+
+author: pi-backlog-builder-1
+created: 2026-09-20 17:56
+---
+Builder started implementation after reading TASK-1, README.md, the Pi skill contract, and the project decisions.
+---
+
+author: pi-backlog-builder-1
+created: 2026-09-20 18:02
+---
+Skeleton probe passed against the installed Pi loader. Preparing the first feature-branch checkpoint.
 ---
 <!-- COMMENTS:END -->
