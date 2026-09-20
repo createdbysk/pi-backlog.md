@@ -36,6 +36,12 @@ Before ticket reads or writes, run `scripts/preflight.sh <exact-project-director
 
 After preflight, invoke the CLI with `BACKLOG_CWD` set to the reported project directory. Prefer `--json` for reads and `--plain` for noninteractive writes.
 
-## Next reference
+## Operation routing
 
-Read `references/cli-workflows.md` only after the activation gate passes and the requested operation needs command detail.
+After the activation gate passes:
+
+- Read [CLI workflows](references/cli-workflows.md) for initialization and ticket commands.
+- Read [safe text handling](references/safe-text.md) before a command carries user-authored ticket text.
+- Read [concurrency and recovery](references/concurrency.md) when several agents or processes may write the project.
+
+View the named ticket before any update, make the smallest requested change, then view it again to verify the result. Treat cleanup and archive operations as destructive moves that require explicit user intent.

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@pi-backlog-builder'
 created_date: '2026-09-20 11:58'
-updated_date: '2026-09-20 18:02'
+updated_date: '2026-09-20 18:09'
 labels:
   - pi-skill
   - headless
@@ -51,6 +51,10 @@ Probe Backlog.md 1.52.0, define executable acceptance checks, build the root ski
 Implementation started from remote feature checkpoint f3ff9116cc8d. The current commit matches origin/feature/pi-backlog-skill; no local bookmark persists while it equals the remote name.
 
 Tested skeleton now includes valid pi-backlog metadata, an explicit activation gate, project-local preflight, missing CLI and missing project errors, and a model-free Pi SDK discovery probe. Verification: ./tests/test-skeleton.sh.
+
+Checkpoint transport blocked: the approved owner tmux target pi-backlog-push:push does not exist. The tmux wrapper lists only pi-backlog-skill and d117933016-review, neither an authorized owner push shell. The tested skeleton checkpoint remains local.
+
+Complete implementation now has root SKILL.md, three focused references, README usage and limits, preflight, static checks, Pi SDK discovery, and isolated Backlog.md 1.52.0 probes. ./tests/run.sh passed. shellcheck scripts/preflight.sh tests/test-skeleton.sh tests/run.sh passed. pi-node --check passed for all three MJS probes. Concurrent same-ticket edits preserved successful writes and rejected overlap with the documented retry-if-appropriate error. Arc lint and formatter do not apply here: this repository has no lint engine, and this Arc installation has no f command.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
@@ -72,5 +76,17 @@ author: pi-backlog-builder-1
 created: 2026-09-20 18:02
 ---
 Skeleton probe passed against the installed Pi loader. Preparing the first feature-branch checkpoint.
+---
+
+author: pi-backlog-builder-1
+created: 2026-09-20 18:03
+---
+Blocked before the first remote checkpoint because pi-backlog-push:push is missing. No direct push was attempted.
+---
+
+author: pi-backlog-builder-1
+created: 2026-09-20 18:09
+---
+Complete implementation suite passed. Preparing the second feature-only checkpoint; .pi/fabric/mesh/state.json remains untracked runtime state.
 ---
 <!-- COMMENTS:END -->
