@@ -6,12 +6,23 @@ const [repoRoot] = process.argv.slice(2);
 assert.ok(repoRoot, "repository root argument is required");
 
 const requiredFiles = [
+  ".gitignore",
   "SKILL.md",
   "README.md",
+  "package.json",
+  "lib/claim-state.mjs",
+  "lib/exclusive-lock.mjs",
+  "lib/relay-state.mjs",
   "references/cli-workflows.md",
   "references/safe-text.md",
   "references/concurrency.md",
+  "references/choreography-protocol.md",
   "scripts/preflight.sh",
+  "scripts/claim-ticket.mjs",
+  "scripts/recover-ticket.mjs",
+  "skills/pi-backlog-relay/SKILL.md",
+  "skills/pi-backlog-developer/SKILL.md",
+  "skills/pi-backlog-reviewer/SKILL.md",
 ];
 const contents = new Map();
 for (const relativePath of requiredFiles) {
@@ -25,28 +36,22 @@ const workflows = contents.get("references/cli-workflows.md");
 const safeText = contents.get("references/safe-text.md");
 const concurrency = contents.get("references/concurrency.md");
 const readme = contents.get("README.md");
+const protocol = contents.get("references/choreography-protocol.md");
+const relay = contents.get("skills/pi-backlog-relay/SKILL.md");
+const developer = contents.get("skills/pi-backlog-developer/SKILL.md");
+const reviewer = contents.get("skills/pi-backlog-reviewer/SKILL.md");
+const claimState = contents.get("lib/claim-state.mjs");
+const exclusiveLock = contents.get("lib/exclusive-lock.mjs");
+const claim = contents.get("scripts/claim-ticket.mjs");
+const recovery = contents.get("scripts/recover-ticket.mjs");
+const manifest = JSON.parse(contents.get("package.json"));
 const publicText = [...contents.values()].join("\n");
 
 for (const token of [
-  "--integration-mode none",
-  "--no-git",
-  "--check-branches false",
-  "--include-remote false",
-  "--bypass-git-hooks false",
-  "--auto-open-browser false",
-  "task create",
-  "task list --json",
-  "search",
-  "task view",
-  "task edit",
-  "--assignee",
-  "--priority",
-  "--status",
-  "--depends-on",
-  "--clear-deps",
-  "--final-summary",
-  "task complete",
-  "task archive",
+  "--integration-mode none", "--no-git", "--check-branches false", "--include-remote false",
+  "--bypass-git-hooks false", "--auto-open-browser false", "task create", "task list --json", "search",
+  "task view", "task edit", "--assignee", "--priority", "--status", "--depends-on", "--clear-deps",
+  "--final-summary", "task complete", "task archive",
 ]) {
   assert.ok(workflows.includes(token), `workflow reference is missing: ${token}`);
 }
@@ -60,9 +65,45 @@ assert.match(safeText, /literal backticks/);
 assert.match(concurrency, /being modified by another process/);
 assert.match(concurrency, /does not publish a general multi-writer transaction guarantee/);
 
+assert.equal(manifest.name, "pi-backlog");
+assert.ok(manifest.keywords.includes("pi-package"));
+assert.deepEqual(manifest.pi.skills, ["./SKILL.md", "./skills"]);
+assert.match(relay, /Never choose a worker/);
+assert.match(relay, /durable Fabric mesh consumer cursor/);
+assert.match(relay, /transport delivery separately/);
+assert.match(relay, /active tickets owned by stale workers/);
+assert.match(developer, /Select an eligible ticket/);
+assert.match(developer, /atomic claim attempt/);
+assert.match(reviewer, /Independent verification/);
+assert.ok(reviewer.includes("**Pass:**"));
+assert.ok(reviewer.includes("**Defect:**"));
+assert.match(reviewer, /clear the reviewer assignee/);
+assert.match(claimState, /Object\.hasOwn/);
+assert.match(exclusiveLock, /openSync\(lockPath, "wx"/);
+assert.doesNotMatch(`${claim}
+${recovery}`, /linkSync|process\.exit\(/);
+assert.match(recovery, /owner-authorized-by/);
+assert.match(recovery, /still live/);
+
+for (const phrase of [
+  "WORKER_READY <developer|reviewer> <worker-id> intercom",
+  "WORKER_QUEUE_ACK <developer|reviewer> <worker-id> <transition-id>",
+  "successful Intercom send without acknowledgement remains retryable",
+  "mutually exclusive",
+  "Neither the relay nor a coordinator chooses or assigns a ticket",
+  "Never infer death or authority from lock age",
+  "Scheduled relay reconciliation",
+  "accepted prototype limitation",
+]) {
+  assert.ok(protocol.includes(phrase), `choreography protocol is missing: ${phrase}`);
+}
+
 for (const heading of ["# pi-backlog", "## Installation", "## Usage", "## Limitations", "## Verification"]) {
   assert.ok(readme.includes(heading), `README is missing heading: ${heading}`);
 }
+assert.deepEqual(contents.get(".gitignore").trim().split("\n"), ["/backlog/", "/.pi/"]);
+assert.equal(fs.existsSync(path.join(repoRoot, "backlog")), false, "product source contains a live backlog board");
+assert.doesNotMatch(publicText, /coordinator (?:names|selects|assigns) (?:the |a )?ticket/i);
 
 const forbiddenCommandPatterns = [
   new RegExp(["backlog", "browser"].join("\\s+"), "i"),
@@ -78,9 +119,8 @@ const forbiddenCommandPatterns = [
 for (const pattern of forbiddenCommandPatterns) {
   assert.doesNotMatch(publicText, pattern, `forbidden instruction matched ${pattern}`);
 }
-
-for (const forbiddenPath of ["extensions", ".pi/extensions", ".pi/hooks", "server", "daemon"]) {
+for (const forbiddenPath of ["extensions", "backlog", "server", "daemon"]) {
   assert.equal(fs.existsSync(path.join(repoRoot, forbiddenPath)), false, `forbidden implementation path exists: ${forbiddenPath}`);
 }
 
-console.log("PASS: documentation covers required flows and excludes prohibited surfaces");
+console.log("PASS: documentation, state guards, and correction contracts are complete");

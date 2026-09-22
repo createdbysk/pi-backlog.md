@@ -1,16 +1,29 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const [skillPath, sdkEntry, agentDir] = process.argv.slice(2);
-assert.ok(skillPath, "skill path argument is required");
-assert.ok(sdkEntry, "Pi SDK entry argument is required");
-assert.ok(agentDir, "agent directory argument is required");
+const [repoRoot, sdkEntry, agentDir] = process.argv.slice(2);
+assert.ok(repoRoot && sdkEntry && agentDir);
+const absoluteRepoRoot = path.resolve(repoRoot);
+const expected = new Map([
+  ["pi-backlog", path.join(absoluteRepoRoot, "SKILL.md")],
+  ["pi-backlog-relay", path.join(absoluteRepoRoot, "skills", "pi-backlog-relay", "SKILL.md")],
+  ["pi-backlog-developer", path.join(absoluteRepoRoot, "skills", "pi-backlog-developer", "SKILL.md")],
+  ["pi-backlog-reviewer", path.join(absoluteRepoRoot, "skills", "pi-backlog-reviewer", "SKILL.md")],
+]);
 
-const { DefaultResourceLoader } = await import(pathToFileURL(sdkEntry).href);
+const { DefaultPackageManager, DefaultResourceLoader, SettingsManager } = await import(pathToFileURL(sdkEntry).href);
+const settingsManager = SettingsManager.create(absoluteRepoRoot, agentDir);
+const packageManager = new DefaultPackageManager({ cwd: absoluteRepoRoot, agentDir, settingsManager });
+const resolved = await packageManager.resolveExtensionSources([absoluteRepoRoot], { temporary: true });
+const skillPaths = resolved.skills.filter((resource) => resource.enabled).map((resource) => resource.path);
+assert.deepEqual(skillPaths.sort(), [...expected.values()].sort(), "package manifest did not resolve the expected skills");
+assert.ok(resolved.skills.every((resource) => resource.metadata.origin === "package"));
+
 const loader = new DefaultResourceLoader({
-  cwd: process.cwd(),
+  cwd: absoluteRepoRoot,
   agentDir,
-  additionalSkillPaths: [skillPath],
+  additionalSkillPaths: skillPaths,
   noExtensions: true,
   noPromptTemplates: true,
   noThemes: true,
@@ -18,9 +31,11 @@ const loader = new DefaultResourceLoader({
 });
 await loader.reload();
 const { skills, diagnostics } = loader.getSkills();
-const discovered = skills.filter((skill) => skill.filePath === skillPath);
-assert.equal(discovered.length, 1, `expected one discovered skill; diagnostics: ${JSON.stringify(diagnostics)}`);
-assert.equal(discovered[0].name, "pi-backlog");
-assert.match(discovered[0].description, /explicitly asks/);
-assert.equal(diagnostics.filter((diagnostic) => diagnostic.type === "error").length, 0);
-console.log("PASS: Pi discovered pi-backlog with valid metadata");
+const discovered = skills.filter((skill) => expected.has(skill.name));
+assert.deepEqual(discovered.map((skill) => skill.name).sort(), [...expected.keys()].sort());
+for (const skill of discovered) {
+  assert.equal(skill.filePath, expected.get(skill.name));
+  assert.ok(skill.description.length > 20, `${skill.name} has an inadequate description`);
+}
+assert.equal(diagnostics.filter((diagnostic) => diagnostic.type === "error").length, 0, JSON.stringify(diagnostics));
+console.log("PASS: Pi package manifest resolved and discovered all four skills");

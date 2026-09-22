@@ -14,5 +14,11 @@ sdk_entry=${PI_SDK_ENTRY:-"${HOME}/.pi/agent/npm/node_modules/@earendil-works/pi
 BACKLOG_BIN="$backlog_bin" PI_NODE_BIN="$pi_node" PI_SDK_ENTRY="$sdk_entry" "$repo_root/tests/test-skeleton.sh"
 "$pi_node" "$repo_root/tests/check-content.mjs" "$repo_root"
 "$pi_node" "$repo_root/tests/probe-backlog.mjs" "$repo_root" "$backlog_bin"
+"$pi_node" "$repo_root/tests/probe-relay.mjs"
+"$pi_node" "$repo_root/tests/probe-lock-primitive.mjs"
+"$pi_node" "$repo_root/tests/probe-filesystem-choreography.mjs" "$repo_root" "$backlog_bin"
+"$pi_node" "$repo_root/tests/probe-choreography.mjs" "$repo_root" "$backlog_bin"
+"$pi_node" "$repo_root/tests/probe-recovery.mjs" "$repo_root" "$backlog_bin"
+"$pi_node" "$repo_root/tests/probe-recovery-races.mjs" "$repo_root" "$backlog_bin"
 
 printf 'PASS: complete pi-backlog verification suite\n'
