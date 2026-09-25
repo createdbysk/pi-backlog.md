@@ -4,10 +4,10 @@ Use these commands only after the `pi-backlog` activation gate passes. The examp
 
 ## Command setup
 
-Resolve both values without guessing:
+Resolve the CLI and project root. Unqualified personal-backlog requests use the universal Unix default:
 
 ```bash
-project_root='/exact/project/directory'
+project_root=${explicit_project_root:-"$HOME/.pi-backlog"}
 backlog_bin=$(command -v backlog)
 ```
 
@@ -15,38 +15,35 @@ Set `BACKLOG_CWD` on every command, even when the shell already sits in the proj
 
 For free-form text, follow [safe text handling](safe-text.md) instead of inserting user text into a shell command.
 
-## Initialize a project
+## Initialize the personal backlog
 
-Initialize only when the user explicitly asks. Require an existing target directory and confirm which directory will receive the files.
+Initialize only when the user explicitly asks. Run the package bootstrap with no location prompt:
 
 ```bash
-project_name=$(basename -- "$project_root")
-BACKLOG_CWD="$project_root" "$backlog_bin" init "$project_name" \
-  --defaults \
-  --integration-mode none \
-  --no-git \
-  --check-branches false \
-  --include-remote false \
-  --bypass-git-hooks false \
-  --auto-open-browser false
+scripts/bootstrap.sh
 ```
 
-Backlog.md 1.52.0 rejects `--integration-mode none` when the same command also passes agent-instruction or agent-install flags. Do not add those flags. The command above creates no agent instruction file.
+The bootstrap:
 
-`--no-git` makes the project filesystem-only and forces these saved values:
+1. creates `$HOME/.pi-backlog`;
+2. initializes a filesystem-only Backlog.md project there when needed;
+3. adds `.pi-backlog` to the active DotSync path set when absent; and
+4. runs `dotsync2 sync`.
+
+It is safe to rerun and never reinitializes an existing board. Backlog.md 1.52.0 rejects `--integration-mode none` when the same command also passes agent-instruction or agent-install flags. The bootstrap passes no such flags and saves:
 
 - `filesystemOnly: true`
 - `checkActiveBranches: false`
 - `remoteOperations: false`
 - `autoCommit: false`
 
-The explicit flags also keep browser auto-open and Git-hook bypass off. Verify the result:
+It also keeps browser auto-open and Git-hook bypass off. Verify the result:
 
 ```bash
-BACKLOG_CWD="$project_root" "$backlog_bin" config list
+scripts/preflight.sh
+BACKLOG_CWD="$HOME/.pi-backlog" "$backlog_bin" config list
 ```
 
-If a Backlog.md config already exists, stop and ask before any reinitialization.
 
 ## Create a ticket
 

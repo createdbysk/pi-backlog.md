@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "$#" -ne 1 ]]; then
-  printf 'Usage: %s <exact-project-directory>\n' "${0##*/}" >&2
+if [[ "$#" -gt 1 ]]; then
+  printf 'Usage: %s [exact-project-directory]\n' "${0##*/}" >&2
   exit 2
 fi
 
@@ -15,7 +15,15 @@ if [[ -z "$backlog_bin" || ! -x "$backlog_bin" ]]; then
   exit 127
 fi
 
-project_input=$1
+if [[ "$#" -eq 1 ]]; then
+  project_input=$1
+else
+  if [[ -z "${HOME:-}" ]]; then
+    printf 'HOME is required to resolve the default Backlog.md project.\n' >&2
+    exit 2
+  fi
+  project_input="$HOME/.pi-backlog"
+fi
 if [[ ! -d "$project_input" ]]; then
   printf 'Project directory not found: %s\n' "$project_input" >&2
   exit 2

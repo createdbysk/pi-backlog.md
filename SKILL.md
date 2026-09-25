@@ -1,11 +1,11 @@
 ---
 name: pi-backlog
-description: Manage durable project tickets through the Backlog.md CLI only when the user explicitly asks to initialize Backlog.md or create, find, view, edit, assign, prioritize, link, complete, or archive tickets, or when active session state already names a Backlog.md ticket. Do not use for general planning, ordinary coding, session startup, or automatic project context.
+description: Manage durable project tickets through the Backlog.md CLI only when the user explicitly asks to initialize Backlog.md or create, find, view, edit, assign, prioritize, link, complete, or archive tickets, or when active session state already names a Backlog.md ticket. Unqualified personal requests such as “my backlog” use $HOME/.pi-backlog. Do not use for general planning, ordinary coding, session startup, or automatic project context.
 ---
 
 # Pi Backlog
 
-Use Backlog.md as a pull-only, project-local ticket store. Load only the ticket data needed for the current request.
+Use Backlog.md as a pull-only ticket store. The default personal board lives at `$HOME/.pi-backlog`. Load only the ticket data needed for the current request.
 
 ## Activation gate
 
@@ -19,20 +19,21 @@ Otherwise, do not inspect the backlog. Never load all open tickets at session st
 ## Boundaries
 
 - Use the installed `backlog` CLI as the only ticket backend. Do not edit ticket Markdown by hand.
-- Resolve the project directory from an explicit user path or trusted active project state. Never guess a global ticket store.
-- Set `BACKLOG_CWD` to that exact directory for every CLI call.
+- Resolve an explicit project path first. Otherwise, use trusted active project state and then the universal personal default `$HOME/.pi-backlog`.
+- Treat “my backlog” and equivalent unqualified personal-backlog requests as `$HOME/.pi-backlog`.
+- Set `BACKLOG_CWD` to the resolved directory for every CLI call.
 - Keep durable scope, acceptance criteria, dependencies, status, comments, and final summaries in Backlog.md.
 - Let `session-discipline` retain only the active ticket ID, its project path, and transient execution state. Do not copy ticket bodies into live notes.
-- Do not install integrations or start auxiliary services. This skill requires no UI, server, automatic context source, or alternate protocol.
+- Do not install a UI, server, background service, automatic context source, or alternate agent protocol. On an explicit request to initialize the personal backlog, the bootstrap may register `.pi-backlog` with DotSync.
 
 ## Preflight
 
-Before ticket reads or writes, run `scripts/preflight.sh <exact-project-directory>` from this skill directory or perform the same checks directly:
+Before ticket reads or writes, run `scripts/preflight.sh [exact-project-directory]` from this skill directory or perform the same checks directly. With no argument, preflight resolves `$HOME/.pi-backlog`.
 
 1. Resolve `backlog` from `BACKLOG_BIN` or `PATH`. If absent, stop and report the missing CLI. Do not install it.
-2. Confirm the exact project directory exists.
-3. Confirm that directory contains `backlog.config.yml`, `backlog/config.yml`, or `.backlog/config.yml`.
-4. If no config exists, stop. Initialize only after an explicit user request.
+2. Resolve the explicit project directory, or `$HOME/.pi-backlog` when the request names no project.
+3. Confirm that directory exists and contains `backlog.config.yml`, `backlog/config.yml`, or `.backlog/config.yml`.
+4. If the default personal board is absent, stop. Run `scripts/bootstrap.sh` only after an explicit request to initialize it.
 
 After preflight, invoke the CLI with `BACKLOG_CWD` set to the reported project directory. Prefer `--json` for reads and `--plain` for noninteractive writes.
 

@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 skill_file="$repo_root/SKILL.md"
 preflight="$repo_root/scripts/preflight.sh"
+bootstrap="$repo_root/scripts/bootstrap.sh"
 claim_helper="$repo_root/scripts/claim-ticket.mjs"
 recovery_helper="$repo_root/scripts/recover-ticket.mjs"
 temp_paths=()
@@ -20,6 +21,7 @@ fail() {
 
 [[ -f "$skill_file" ]] || fail "SKILL.md is missing"
 [[ -x "$preflight" ]] || fail "scripts/preflight.sh is missing or not executable"
+[[ -x "$bootstrap" ]] || fail "scripts/bootstrap.sh is missing or not executable"
 [[ -x "$claim_helper" ]] || fail "scripts/claim-ticket.mjs is missing or not executable"
 [[ -x "$recovery_helper" ]] || fail "scripts/recover-ticket.mjs is missing or not executable"
 [[ -f "$repo_root/package.json" ]] || fail "package.json is missing"
@@ -70,6 +72,61 @@ temp_paths+=("$initialized")
 BACKLOG_CWD="$initialized" "$backlog_bin" init 'Skeleton probe' --defaults --integration-mode none --no-git \
   --check-branches false --include-remote false --bypass-git-hooks false --auto-open-browser false >/dev/null
 BACKLOG_BIN="$backlog_bin" /bin/bash "$preflight" "$initialized" >/dev/null
+
+bootstrap_home=$(mktemp -d '/tmp/pi backlog default home.XXXXXX')
+temp_paths+=("$bootstrap_home")
+fake_bin_dir=$(mktemp -d '/tmp/pi backlog fake bin.XXXXXX')
+temp_paths+=("$fake_bin_dir")
+dotsync_state="$bootstrap_home/dotsync-state"
+dotsync_log="$bootstrap_home/dotsync-log"
+cat >"$fake_bin_dir/dotsync2" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$1:${2:-}" in
+  paths:list)
+    if [[ -s "$DOTSYNC_STATE" ]]; then
+      printf '%s\n' '---' 'include:' '  - ".pi-backlog"' 'exclude:'
+    else
+      printf '%s\n' '---' 'include:' 'exclude:'
+    fi
+    ;;
+  paths:add)
+    printf '%s\n' "$3" >"$DOTSYNC_STATE"
+    printf 'paths add %s\n' "$3" >>"$DOTSYNC_LOG"
+    ;;
+  *)
+    if [[ "$1" == "sync" ]]; then
+      printf 'sync\n' >>"$DOTSYNC_LOG"
+    else
+      printf 'unexpected dotsync invocation: %s\n' "$*" >&2
+      exit 2
+    fi
+    ;;
+esac
+EOF
+chmod +x "$fake_bin_dir/dotsync2"
+
+HOME="$bootstrap_home" BACKLOG_BIN="$backlog_bin" DOTSYNC_BIN="$fake_bin_dir/dotsync2" \
+  DOTSYNC_STATE="$dotsync_state" DOTSYNC_LOG="$dotsync_log" "$bootstrap" >/dev/null
+default_root="$bootstrap_home/.pi-backlog"
+[[ -f "$default_root/backlog/config.yml" ]] || fail "bootstrap did not initialize ~/.pi-backlog"
+grep -Fx -- 'paths add .pi-backlog' "$dotsync_log" >/dev/null || fail "bootstrap did not register .pi-backlog with DotSync"
+grep -Fx -- 'sync' "$dotsync_log" >/dev/null || fail "bootstrap did not sync DotSync"
+HOME="$bootstrap_home" BACKLOG_BIN="$backlog_bin" /bin/bash "$preflight" | \
+  grep -Fx -- "PROJECT_ROOT=$default_root" >/dev/null || fail "preflight did not resolve ~/.pi-backlog by default"
+
+add_count_before=$(grep -Fc -- 'paths add .pi-backlog' "$dotsync_log")
+HOME="$bootstrap_home" BACKLOG_BIN="$backlog_bin" DOTSYNC_BIN="$fake_bin_dir/dotsync2" \
+  DOTSYNC_STATE="$dotsync_state" DOTSYNC_LOG="$dotsync_log" "$bootstrap" >/dev/null
+add_count_after=$(grep -Fc -- 'paths add .pi-backlog' "$dotsync_log")
+[[ "$add_count_after" -eq "$add_count_before" ]] || fail "bootstrap registered the DotSync path twice"
+if HOME="$bootstrap_home" BACKLOG_BIN="$backlog_bin" DOTSYNC_BIN="$fake_bin_dir/dotsync2" \
+    DOTSYNC_STATE="$dotsync_state" DOTSYNC_LOG="$dotsync_log" "$bootstrap" /tmp/custom >/dev/null 2>&1; then
+  fail "bootstrap accepted a custom location"
+else
+  custom_location_rc=$?
+fi
+[[ "$custom_location_rc" -eq 2 ]] || fail "custom bootstrap location returned $custom_location_rc instead of 2"
 
 pi_node=${PI_NODE_BIN:-$(command -v pi-node || command -v node || true)}
 [[ -n "$pi_node" ]] || fail "Node runtime not found"

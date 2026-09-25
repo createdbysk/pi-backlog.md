@@ -18,6 +18,7 @@ const requiredFiles = [
   "references/concurrency.md",
   "references/choreography-protocol.md",
   "scripts/preflight.sh",
+  "scripts/bootstrap.sh",
   "scripts/claim-ticket.mjs",
   "scripts/recover-ticket.mjs",
   "skills/pi-backlog-relay/SKILL.md",
@@ -42,6 +43,8 @@ const developer = contents.get("skills/pi-backlog-developer/SKILL.md");
 const reviewer = contents.get("skills/pi-backlog-reviewer/SKILL.md");
 const claimState = contents.get("lib/claim-state.mjs");
 const exclusiveLock = contents.get("lib/exclusive-lock.mjs");
+const bootstrap = contents.get("scripts/bootstrap.sh");
+const preflight = contents.get("scripts/preflight.sh");
 const claim = contents.get("scripts/claim-ticket.mjs");
 const recovery = contents.get("scripts/recover-ticket.mjs");
 const manifest = JSON.parse(contents.get("package.json"));
@@ -49,9 +52,13 @@ const publicText = [...contents.values()].join("\n");
 
 for (const token of [
   "--integration-mode none", "--no-git", "--check-branches false", "--include-remote false",
-  "--bypass-git-hooks false", "--auto-open-browser false", "task create", "task list --json", "search",
-  "task view", "task edit", "--assignee", "--priority", "--status", "--depends-on", "--clear-deps",
-  "--final-summary", "task complete", "task archive",
+  "--bypass-git-hooks false", "--auto-open-browser false",
+]) {
+  assert.ok(`${workflows}\n${bootstrap}`.includes(token), `bootstrap contract is missing: ${token}`);
+}
+for (const token of [
+  "task create", "task list --json", "search", "task view", "task edit", "--assignee", "--priority",
+  "--status", "--depends-on", "--clear-deps", "--final-summary", "task complete", "task archive",
 ]) {
   assert.ok(workflows.includes(token), `workflow reference is missing: ${token}`);
 }
@@ -60,12 +67,19 @@ assert.match(skill, /only when the user explicitly asks/);
 assert.match(skill, /active session state already names a Backlog\.md ticket/);
 assert.match(skill, /only the active ticket ID, its project path, and transient execution state/);
 assert.match(skill, /Never load all open tickets at session start/);
+assert.match(skill, /universal personal default `\$HOME\/.pi-backlog`/);
+assert.match(skill, /Treat “my backlog”/);
+assert.match(preflight, /project_input="\$HOME\/.pi-backlog"/);
+assert.match(bootstrap, /project_root="\$HOME\/.pi-backlog"/);
+assert.match(bootstrap, /paths add \.pi-backlog/);
+assert.match(bootstrap, /"\$dotsync_bin" sync/);
 assert.match(safeText, /Never use `eval`/);
 assert.match(safeText, /literal backticks/);
 assert.match(concurrency, /being modified by another process/);
 assert.match(concurrency, /does not publish a general multi-writer transaction guarantee/);
 
 assert.equal(manifest.name, "pi-backlog");
+assert.equal(manifest.version, "0.3.0");
 assert.ok(manifest.keywords.includes("pi-package"));
 assert.deepEqual(manifest.pi.skills, ["./SKILL.md", "./skills"]);
 assert.match(relay, /Never choose a worker/);

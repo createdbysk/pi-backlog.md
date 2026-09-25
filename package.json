@@ -1,6 +1,6 @@
 {
   "name": "pi-backlog",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Pull-only Backlog.md ticket workflows and manual multi-role choreography for Pi",
   "keywords": [

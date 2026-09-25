@@ -16,13 +16,14 @@ The package manifest exposes four flat skills: `pi-backlog`, `pi-backlog-relay`,
 pi --skill /absolute/path/to/pi-backlog.md/SKILL.md
 ```
 
-Install Backlog.md separately and ensure `backlog` appears on `PATH`. The skill reports a missing CLI but never installs one.
+Install Backlog.md separately and ensure `backlog` appears on `PATH`. The skill reports a missing CLI but never installs one. The personal bootstrap uses the universal Unix path `~/.pi-backlog` and registers `.pi-backlog` with DotSync.
 
 ## Usage
 
-Ask for an explicit ticket action and name the project when the current directory does not establish it:
+Ask for an explicit ticket action. Without an explicit project path or trusted active project, the skill uses `~/.pi-backlog`:
 
-- “Initialize Backlog.md in `/path/to/project` without repository integration.”
+- “Initialize my backlog.”
+- “Tell me what is on my backlog.”
 - “Create a ticket for the parser fix with these acceptance criteria.”
 - “Show `TASK-12`.”
 - “Assign `TASK-12` to `@alex`, set high priority, and mark it in progress.”
@@ -38,7 +39,8 @@ The skill also activates when trusted live session state already points to one B
 - `references/cli-workflows.md` holds command details for initialization and ticket operations.
 - `references/safe-text.md` prevents shell interpretation of user-authored text.
 - `references/concurrency.md` records observed lock behavior and conservative multi-agent rules.
-- `scripts/preflight.sh` checks the CLI and exact project without reading ticket bodies.
+- `scripts/bootstrap.sh` initializes `~/.pi-backlog`, registers it with DotSync, and performs the first sync.
+- `scripts/preflight.sh` checks the CLI and resolved project without reading ticket bodies.
 - `skills/` contains the relay, developer, and reviewer role contracts.
 - `references/choreography-protocol.md` defines durable ordering, explicit-role registration, queue labels, acknowledgements, retries, and reconciliation.
 - `lib/relay-state.mjs` provides deterministic, replay-safe, fair state transitions for durable relay adapters.
@@ -53,11 +55,12 @@ The product repository intentionally contains no live `backlog/` board and no `.
 
 ## Limitations
 
+- Personal bootstrap currently targets Unix-like systems and uses `~/.pi-backlog`; it does not offer a custom location.
 - The probes target Backlog.md 1.52.0. Check installed help before use with another version.
 - Backlog.md exposes no general transaction contract across several tickets or files. Keep one writer per ticket and serialize ticket creation.
 - A completion status and completion cleanup differ. Cleanup removes a terminal ticket from the active board.
 - Backlog.md 1.52.0 does not escape embedded double quotes in the initialized YAML project name. Use a project name without double quotes.
-- The skills never launch a web surface, start a background process, inject ticket context, or configure an alternate agent integration.
+- The skills never launch a web surface, start a background process, inject ticket context, or configure an alternate agent integration. Personal bootstrap only registers `.pi-backlog` with DotSync.
 - Recovery requires an explicit owner authorization and exact durable-state checks; lock age alone never authorizes reassignment.
 - Complete relay-process death between scheduled wakeups is an accepted manual-prototype limitation. The package documents reconciliation but does not install a scheduler.
 
